@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Build Dashboard</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.css">
+    <!-- Bootstrap CSS CDN -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ775/sX5H0iVeg1L7xh0wGk8amv5VqVn0J" crossorigin="anonymous">
+    <!-- Existing styles moved below Bootstrap to ensure they take precedence -->
+    <style>
+       body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+            width: 95%;
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 1rem;
+        }
+
+        .card {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+            transition: box-shadow 0.3s;
+        }
+
+        .card:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2 {
+            color: #2a2a2a;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        h2 {
+            border-bottom: 2px solid #0088cc;
+            padding-bottom: 0.3rem;
+        }
+
+        .metric {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        footer {
+            text-align: center;
+            padding: 1rem 0;
+            background-color: #2a2a2a;
+            color: #f4f4f4;
+        }
+    </style>
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">Build Dashboard</a>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <!-- Placeholder for aggregated metrics -->
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h2>Average Build Duration</h2>
+                        <p class="metric">PLACEHOLDER</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h2>Average Tests Failed</h2>
+                        <p class="metric">PLACEHOLDER</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="card h-100">
+                    <canvas id="buildPieChart" width="400" height="400"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-6 col-md-12">
+                <div class="card h-100">
+                    <canvas id="buildDurationLineChart" width="400" height="100"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-6 col-md-12">
+                <div class="card h-100">
+                    <canvas id="testResultsLineChart" width="400" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer mt-auto py-3 bg-light">
+        <div class="container">
+            <span class="text-muted">Build Dashboard by Chase Olivard</span>
+        </div>
+    </footer>
+
+     <!-- Bootstrap JS, Popper.js, and jQuery -->
+     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+     <!-- Chart.js -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+<script>
+    // Pie chart data
+    var buildSuccess = {{ build_data.success|default(0)|tojson }};
+    var buildFail = {{ build_data.fail|default(0)|tojson }};
+    
+    // Line chart data
+    var buildDates = {{ build_data.test_dates|tojson|default([]) }};
+    var buildDurations = {{ build_data.durations|tojson|default([]) }};
+    var testDates = {{ build_data.test_dates|tojson|default([]) }};
+    var testsPassed = {{ build_data.tests_passed|tojson|default([]) }};
+    var testsFailed = {{ build_data.tests_failed|tojson|default([]) }};
+
+    // Pie chart for build results
+    var ctxPie = document.getElementById('buildPieChart').getContext('2d');
+    var buildPieChart = new Chart(ctxPie, {
+        type: 'pie',
+        data: {
+            labels: ['Success', 'Fail'],
+            datasets: [{
+                data: [buildSuccess, buildFail],
+                backgroundColor: ['#0088cc', '#979797']
+            }]
+        }
+    });
+
+    // Line chart for build durations
+    var ctxLine = document.getElementById('buildDurationLineChart').getContext('2d');
+    var buildDurationLineChart = new Chart(ctxLine, {
+        type: 'line',
+        data: {
+            labels: buildDates,
+            datasets: [{
+                label: 'Build Duration (seconds)',
+                data: buildDurations,
+                borderColor: '#0088cc',
+                backgroundColor: 'rgba(0, 136, 204, 0.1)',
+                fill: true
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Line chart for test results
+    var ctxTestResults = document.getElementById('testResultsLineChart').getContext('2d');
+    var testResultsLineChart = new Chart(ctxTestResults, {
+        type: 'line',
+        data: {
+            labels: testDates,
+            datasets: [{
+                label: 'Tests Passed',
+                data: testsPassed,
+                borderColor: '#4CAF50',
+                backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                fill: true
+            }, {
+                label: 'Tests Failed',
+                data: testsFailed,
+                borderColor: '#FF0000',
+                backgroundColor: 'rgba(255, 0, 0, 0.1)',
+                fill: true
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+</script>
+
+</body>
+</html>
